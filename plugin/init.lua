@@ -2,4 +2,4 @@ local progress = require("progress")
 
 progress.AddSession("nvim")
 progress.AddSession("lua")
-progress.Print()
+progress.StartSession(progress.sessions[1], 2000)
