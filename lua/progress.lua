@@ -1,4 +1,6 @@
+local api = vim.api
 local uv = vim.loop
+local buf = 0
 
 local M = {
 	timer = uv.new_timer(),
@@ -14,7 +16,7 @@ function M.StartSession(session, timeout)
 				M.timer:stop()
 				M.timer:close()
 
-				print("name " .. session.name .. "\t" .. "time " .. session.time)
+				M.Display()
 			end
 
 			session.time = session.time + 1000
@@ -37,6 +39,28 @@ function M.Print()
 	for _, value in ipairs(M.sessions) do
 		print("name " .. value.name .. "\t" .. "time " .. value.time)
 	end
+end
+
+function M.Display()
+	buf = api.nvim_create_buf(false, true)
+
+	local opts = {
+		relative = "editor",
+		width = 50,
+		height = 20,
+		row = 10,
+		col = 10,
+		style = "minimal",
+		border = "rounded",
+		title = "Progress",
+		title_pos = "center",
+	}
+
+	api.nvim_open_win(buf, true, opts)
+end
+
+function M.Run()
+	M.Display()
 end
 
 return M
