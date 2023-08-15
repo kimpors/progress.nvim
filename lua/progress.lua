@@ -16,7 +16,7 @@ function M.StartSession(session, timeout)
 				M.timer:stop()
 				M.timer:close()
 
-				M.Display()
+				M.Run()
 			end
 
 			session.time = session.time + 1000
@@ -59,8 +59,22 @@ function M.Display()
 	api.nvim_open_win(buf, true, opts)
 end
 
+function M.SetContent()
+	api.nvim_buf_set_option(buf, "modifiable", true)
+
+	local sessions = {}
+
+	for _, value in ipairs(M.sessions) do
+		table.insert(sessions, value.name .. "\t|\t" .. value.time)
+	end
+
+	api.nvim_buf_set_lines(buf, -2, -1, false, sessions)
+	api.nvim_buf_set_option(buf, "modifiable", false)
+end
+
 function M.Run()
 	M.Display()
+	M.SetContent()
 end
 
 return M
