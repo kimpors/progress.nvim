@@ -1,6 +1,8 @@
 local api = vim.api
 local uv = vim.loop
-local buf = 0
+local win, buf = 0, 0
+
+local cursor = { from = 0, current = 0, to = -1 }
 
 local M = {
 	timer = uv.new_timer(),
@@ -69,7 +71,7 @@ function M.Display()
 		title_pos = "center",
 	}
 
-	api.nvim_open_win(buf, true, opts)
+	win = api.nvim_open_win(buf, true, opts)
 end
 
 function M.SetContent()
@@ -78,17 +80,77 @@ function M.SetContent()
 	local menu = {}
 
 	table.insert(menu, "Your sessions:")
-	for _, value in ipairs(M.sessions) do
-		table.insert(menu, value.name .. "\t|\t\t" .. value.time)
+
+	cursor.from = 2
+	cursor.current = 2
+
+	for index, value in ipairs(M.sessions) do
+		table.insert(menu, index .. ". " .. value.name .. "\t|\t\t" .. value.time)
+		cursor.to = index + 1
 	end
 
 	api.nvim_buf_set_lines(buf, -2, -1, false, menu)
 	api.nvim_buf_set_option(buf, "modifiable", false)
 end
 
+function M.SetKeymaps(keymaps)
+	local except = ""
+
+	for key, _ in pairs(keymaps) do
+		except = except .. key
+	end
+
+	local chars = {}
+	for i = ("a"):byte(), ("z"):byte(), 1 do
+		if not string.find(string.char(i), "[" .. except .. "]") then
+			table.insert(chars, string.char(i))
+		end
+	end
+
+	local opts = {
+		nowait = true,
+		noremap = true,
+		silent = true,
+	}
+
+	for key, value in pairs(keymaps) do
+		api.nvim_buf_set_keymap(buf, "n", key, ":lua require'" .. "progress" .. "'." .. value .. "<CR>", opts)
+	end
+
+	for _, value in pairs(chars) do
+		api.nvim_buf_set_keymap(buf, "n", value, "", opts)
+		api.nvim_buf_set_keymap(buf, "n", value:upper(), "", opts)
+		api.nvim_buf_set_keymap(buf, "n", "<C-" .. value .. ">", "", opts)
+	end
+end
+
 function M.Run()
+	local keymaps = {
+		j = "Move(1)",
+		k = "Move(-1)",
+		q = "Exit()",
+	}
+
 	M.Display()
 	M.SetContent()
+	M.SetKeymaps(keymaps)
+	M.Move(0)
+end
+
+function M.Move(vertical)
+	cursor.current = cursor.current + vertical
+
+	if cursor.current >= cursor.to then
+		cursor.current = cursor.to
+	elseif cursor.current <= cursor.from then
+		cursor.current = cursor.from
+	end
+
+	api.nvim_win_set_cursor(win, { cursor.current, 0 })
+end
+
+function M.Exit()
+	api.nvim_win_close(win, false)
 end
 
 return M
