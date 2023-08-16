@@ -1,4 +1,3 @@
-local time_format = require("util.time_format")
 local file = require("util.file")
 
 local api = vim.api
@@ -30,7 +29,7 @@ function M.StartSession(name, timeout)
 		1000,
 		0,
 		vim.schedule_wrap(function()
-			session.time = session.time + 1000
+			session.time = session.time + 1
 
 			if session.time >= timeout then
 				M.timer:stop()
@@ -87,8 +86,19 @@ function M.SetContent()
 	cursor.from = 2
 	cursor.current = 2
 
+	local time = {
+		year = 0,
+		month = 0,
+		day = 0,
+		hour = 0,
+		min = 0,
+		sec = 0,
+	}
+
 	for index, value in ipairs(M.sessions) do
-		table.insert(menu, index .. ". " .. value.name .. "\t|\t\t" .. time_format.ToSeconds(value.time))
+		time.sec = value.time
+
+		table.insert(menu, index .. ". " .. value.name .. "\t|\t\t" .. os.date("%Hh %Mm %Ss", os.time(time)))
 		cursor.to = index + 1
 	end
 
@@ -162,7 +172,7 @@ function M.Start()
 		end
 	end
 
-	M.StartSession(a, 1000)
+	M.StartSession(a, 1)
 	M.Exit()
 end
 

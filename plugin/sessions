@@ -1,2 +1,2 @@
-{ name='nvim', time=3000, }
-{ name='lua', time=0, }
+{ name='nvim', time=3, }
+{ name='lua', time=1, }
