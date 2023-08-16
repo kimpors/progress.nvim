@@ -1,3 +1,5 @@
+local time_format = require("util.time_format")
+
 local api = vim.api
 local uv = vim.loop
 local win, buf = 0, 0
@@ -24,17 +26,15 @@ function M.StartSession(name, timeout)
 	end
 
 	M.timer:start(
-		0,
 		1000,
+		0,
 		vim.schedule_wrap(function()
+			session.time = session.time + 1000
+
 			if session.time >= timeout then
 				M.timer:stop()
-				M.timer:close()
-
-				M.Run()
+				print("Done")
 			end
-
-			session.time = session.time + 1000
 		end)
 	)
 
@@ -85,7 +85,7 @@ function M.SetContent()
 	cursor.current = 2
 
 	for index, value in ipairs(M.sessions) do
-		table.insert(menu, index .. ". " .. value.name .. "\t|\t\t" .. value.time)
+		table.insert(menu, index .. ". " .. value.name .. "\t|\t\t" .. time_format.ToSeconds(value.time))
 		cursor.to = index + 1
 	end
 
@@ -128,6 +128,7 @@ function M.Run()
 	local keymaps = {
 		j = "Move(1)",
 		k = "Move(-1)",
+		o = "Start()",
 		q = "Exit()",
 	}
 
@@ -147,6 +148,19 @@ function M.Move(vertical)
 	end
 
 	api.nvim_win_set_cursor(win, { cursor.current, 0 })
+end
+
+function M.Start()
+	local a = api.nvim_get_current_line()
+
+	for _, value in ipairs(M.sessions) do
+		if string.find(a, value.name) then
+			a = value.name
+		end
+	end
+
+	M.StartSession(a, 1000)
+	M.Exit()
 end
 
 function M.Exit()
