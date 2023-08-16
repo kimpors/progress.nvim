@@ -1,0 +1,2 @@
+{ name='nvim', time=3000, }
+{ name='lua', time=0, }

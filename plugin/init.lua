@@ -1,6 +1,6 @@
 local progress = require("progress")
+local file = require("util.file")
 
-progress.AddSession("nvim")
-progress.AddSession("lua")
+progress.sessions = file.Load()
 
 vim.api.nvim_create_user_command("Progress", "lua require('progress').Run()", {})

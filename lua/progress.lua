@@ -1,4 +1,5 @@
 local time_format = require("util.time_format")
+local file = require("util.file")
 
 local api = vim.api
 local uv = vim.loop
@@ -33,6 +34,8 @@ function M.StartSession(name, timeout)
 
 			if session.time >= timeout then
 				M.timer:stop()
+
+				file.Save(M.sessions)
 				print("Done")
 			end
 		end)
