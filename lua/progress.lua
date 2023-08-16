@@ -7,7 +7,20 @@ local M = {
 	sessions = {},
 }
 
-function M.StartSession(session, timeout)
+function M.StartSession(name, timeout)
+	local session = false
+
+	for _, value in ipairs(M.sessions) do
+		if value.name == name then
+			session = value
+		end
+	end
+
+	if not session then
+		print("ERROR. Session name doesn't exists")
+		return 1
+	end
+
 	M.timer:start(
 		0,
 		1000,
@@ -62,13 +75,14 @@ end
 function M.SetContent()
 	api.nvim_buf_set_option(buf, "modifiable", true)
 
-	local sessions = {}
+	local menu = {}
 
+	table.insert(menu, "Your sessions:")
 	for _, value in ipairs(M.sessions) do
-		table.insert(sessions, value.name .. "\t|\t" .. value.time)
+		table.insert(menu, value.name .. "\t|\t\t" .. value.time)
 	end
 
-	api.nvim_buf_set_lines(buf, -2, -1, false, sessions)
+	api.nvim_buf_set_lines(buf, -2, -1, false, menu)
 	api.nvim_buf_set_option(buf, "modifiable", false)
 end
 
