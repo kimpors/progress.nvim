@@ -1,4 +1,5 @@
 local file = require("util.file")
+local id = nil
 
 local api = vim.api
 local uv = vim.loop
@@ -27,7 +28,7 @@ function M.StartSession(name, timeout)
 
 	M.timer:start(
 		1000,
-		0,
+		1000,
 		vim.schedule_wrap(function()
 			session.time = session.time + 1
 
@@ -50,6 +51,8 @@ end
 
 function M.AddSession(name)
 	table.insert(M.sessions, { name = name, time = 0 })
+
+	file.Save(M.sessions)
 end
 
 function M.Print()
@@ -76,14 +79,24 @@ function M.Display()
 	win = api.nvim_open_win(buf, true, opts)
 end
 
+function M.ClearContent()
+	api.nvim_buf_set_option(buf, "modifiable", true)
+
+	api.nvim_buf_set_lines(buf, cursor.from - 3, cursor.to, false, {})
+
+	api.nvim_buf_set_option(buf, "modifiable", false)
+end
+
 function M.SetContent()
 	api.nvim_buf_set_option(buf, "modifiable", true)
 
 	local menu = {}
 
+	table.insert(menu, "[o]Start\t[a]Add")
+	table.insert(menu, "")
 	table.insert(menu, "Your sessions:")
 
-	cursor.from = 2
+	cursor.from = 4
 	cursor.current = 2
 
 	local time = {
@@ -98,8 +111,8 @@ function M.SetContent()
 	for index, value in ipairs(M.sessions) do
 		time.sec = value.time
 
-		table.insert(menu, index .. ". " .. value.name .. "\t|\t\t" .. os.date("%Hh %Mm %Ss", os.time(time)))
-		cursor.to = index + 1
+		table.insert(menu, index .. ". " .. value.name .. "\t|\t\t" .. os.date("%Hh %Mm %Ss", os.time(time)) .. "[1m]")
+		cursor.to = index + 3
 	end
 
 	api.nvim_buf_set_lines(buf, -2, -1, false, menu)
@@ -135,13 +148,19 @@ function M.SetKeymaps(keymaps)
 		api.nvim_buf_set_keymap(buf, "n", value:upper(), "", opts)
 		api.nvim_buf_set_keymap(buf, "n", "<C-" .. value .. ">", "", opts)
 	end
+
+	api.nvim_buf_set_keymap(buf, "i", "<Enter>", "", opts)
 end
 
 function M.Run()
+	M.sessions = file.Load()
+
 	local keymaps = {
 		j = "Move(1)",
 		k = "Move(-1)",
 		o = "Start()",
+		a = "Add()",
+		e = "Edit()",
 		q = "Exit()",
 	}
 
@@ -149,6 +168,47 @@ function M.Run()
 	M.SetContent()
 	M.SetKeymaps(keymaps)
 	M.Move(0)
+end
+
+function M.Add()
+	api.nvim_buf_set_option(buf, "modifiable", true)
+
+	api.nvim_buf_set_lines(buf, cursor.to, cursor.to + 1, false, { "" })
+	cursor.to = cursor.to + 1
+
+	api.nvim_win_set_cursor(win, { cursor.to, 1 })
+
+	vim.cmd("startinsert")
+
+	if id == nil then
+		id = api.nvim_create_autocmd("InsertLeave", {
+			callback = function()
+				api.nvim_buf_set_option(buf, "modifiable", false)
+				M.AddSession(string.sub(api.nvim_get_current_line(), 1))
+				M.Exit()
+				M.Run()
+			end,
+		})
+	end
+end
+
+function M.Edit()
+	local line = api.nvim_get_current_line()
+	local range = { start = nil, finish = nil }
+
+	for i = 1, #M.sessions, 1 do
+		if not (range.start == nil) then
+			break
+		end
+
+		range.start, range.finish = string.find(line, M.sessions[i].name)
+	end
+
+	print(range.start, range.finish)
+	print(string.sub(line, range.start, range.finish))
+
+	api.nvim_win_set_cursor(win, { cursor.current, range.finish })
+	vim.cmd("startinsert")
 end
 
 function M.Move(vertical)
