@@ -1,7 +1,11 @@
-local M = {}
+local M = {
+	path = vim.api.nvim_command_output("echo stdpath('cache')") .. "/progress.nvim/",
+}
 
 function M.Save(sessions)
-	local file = io.open("/home/kimpors/projects/nvim/progress.nvim/plugin/.sessions", "w")
+	vim.cmd("!mkdir -p " .. M.path)
+
+	local file = io.open(M.path .. "cache", "w")
 
 	for i = 1, #sessions, 1 do
 		file:write("{ ")
@@ -19,7 +23,7 @@ function M.Save(sessions)
 end
 
 function M.Load()
-	local file = io.open("/home/kimpors/projects/nvim/progress.nvim/plugin/.sessions", "r")
+	local file = io.open(M.path .. "cache", "r")
 
 	local result = {}
 	local line = ""
