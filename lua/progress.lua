@@ -76,9 +76,13 @@ end
 function M.SetContent()
 	api.nvim_buf_set_option(buf, "modifiable", true)
 
+	if cursor.to > 1 then
+		api.nvim_buf_set_lines(buf, 1, cursor.to, false, {})
+	end
+
 	local menu = {}
 
-	table.insert(menu, "[o]Start\t[a]Add")
+	table.insert(menu, "[o]Start\t[a]Add\t[r]Remove")
 	table.insert(menu, "")
 	table.insert(menu, "Your sessions:")
 
@@ -99,10 +103,6 @@ function M.SetContent()
 	for index, value in ipairs(M.sessions) do
 		opts.sec = value.time
 		local time = os.date("%Hh %Mm %Ss", os.time(opts))
-		opts.sec = 0
-
-		-- opts.sec = value.interval or 30
-		-- local interval = os.date("%Hh %Mm %Ss", os.time(opts))
 
 		table.insert(menu, index .. ". " .. value.name .. "\t|\t\t" .. time)
 		cursor.to = index + 3
@@ -151,7 +151,7 @@ function M.Run()
 		k = "Move(-1)",
 		o = "Start()",
 		a = "Add()",
-		-- e = "Edit()",
+		r = "Remove()",
 		q = "Exit()",
 	}
 
@@ -176,25 +176,41 @@ function M.Add()
 			api.nvim_del_autocmd(id)
 			api.nvim_buf_set_option(buf, "modifiable", false)
 			M.AddSession(string.sub(api.nvim_get_current_line(), 1))
-			M.Exit()
-			M.Run()
+			M.SetContent()
+			M.Move(0)
 		end,
 	})
 end
 
-function M.Edit()
+function M.Remove()
 	local line = api.nvim_get_current_line()
-	local range = { start = nil, finish = nil }
 
-	range.start, range.finish = string.find(line, "%b[]$")
+	for index, value in ipairs(M.sessions) do
+		if string.find(line, value.name) then
+			table.remove(M.sessions, index)
+		end
+	end
 
-	print(range.start, range.finish)
-	print(string.sub(line, range.start, range.finish))
+	file.Save(M.sessions)
 
-	api.nvim_win_set_cursor(win, { cursor.current, range.finish })
-
-	vim.cmd("startinsert")
+	M.SetContent()
+	M.Move(0)
 end
+
+-- TODO
+-- function M.Edit()
+-- 	local line = api.nvim_get_current_line()
+-- 	local range = { start = nil, finish = nil }
+--
+-- 	range.start, range.finish = string.find(line, "%b[]$")
+--
+-- 	print(range.start, range.finish)
+-- 	print(string.sub(line, range.start, range.finish))
+--
+-- 	api.nvim_win_set_cursor(win, { cursor.current, range.finish })
+--
+-- 	vim.cmd("startinsert")
+-- end
 
 function M.Move(vertical)
 	cursor.current = cursor.current + vertical
