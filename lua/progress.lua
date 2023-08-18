@@ -33,7 +33,7 @@ function M.SetContent()
 
 	local menu = {}
 
-	table.insert(menu, "[o]Start\t[a]Add\t[r]Remove")
+	table.insert(menu, "[o]Start\t[a]Add\t[r]Remove\t[e]Edit")
 	table.insert(menu, "")
 	table.insert(menu, "Your sessions:")
 
@@ -122,6 +122,7 @@ function M.Run()
 		k = "Move(-1)",
 		o = "Start()",
 		a = "Add()",
+		e = "Edit()",
 		r = "Remove()",
 		q = "Exit()",
 	}
@@ -177,20 +178,28 @@ function M.Remove()
 	M.Move(0)
 end
 
--- TODO
--- function M.Edit()
--- 	local line = API.nvim_get_current_line()
--- 	local range = { start = nil, finish = nil }
---
--- 	range.start, range.finish = string.find(line, "%b[]$")
---
--- 	print(range.start, range.finish)
--- 	print(string.sub(line, range.start, range.finish))
---
--- 	API.nvim_win_set_cursor(win, { cursor.current, range.finish })
---
--- 	vim.cmd("startinsert")
--- end
+function M.Edit()
+	API.nvim_buf_set_option(buf, "modifiable", true)
+
+	API.nvim_set_current_line(sessions.current().name)
+	API.nvim_win_set_cursor(win, { sessions.index + offset, #sessions.current().name })
+	vim.cmd("startinsert")
+
+	id = API.nvim_create_autocmd("InsertLeave", {
+		callback = function()
+			API.nvim_buf_set_option(buf, "modifiable", false)
+			API.nvim_del_autocmd(id)
+			API.nvim_buf_set_option(buf, "modifiable", false)
+
+			local name = string.sub(API.nvim_get_current_line(), 1)
+
+			sessions.current().name = name
+			sessions.save()
+			M.Update()
+			M.Move(0)
+		end,
+	})
+end
 
 function M.Move(vertical)
 	if vertical > 0 then
