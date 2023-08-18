@@ -1,4 +1,5 @@
 local sessions = require("util.sessions")
+local ui = require("util.ui")
 
 local id = nil
 local offset = 0
@@ -10,35 +11,21 @@ local M = {
 	},
 }
 
-function M.Display()
-	buf = API.nvim_create_buf(false, true)
-
-	local opts = {
-		relative = "editor",
-		width = 50,
-		height = 20,
-		row = 10,
-		col = 10,
-		style = "minimal",
-		border = "rounded",
-		title = "Progress",
-		title_pos = "center",
+function M.Menu()
+	local menu = {
+		items = {
+			"[o]Start",
+			"[a]Add",
+			"[r]Remove",
+			"[e]Edit",
+		},
+		body = {
+			"",
+			"Your sessions: ",
+		},
 	}
 
-	win = API.nvim_open_win(buf, true, opts)
-end
-
-function M.SetContent()
-	API.nvim_buf_set_option(buf, "modifiable", true)
-
-	local menu = {}
-
-	table.insert(menu, "[o]Start\t[a]Add\t[r]Remove\t[e]Edit")
-	table.insert(menu, "")
-	table.insert(menu, "Your sessions:")
-
-	offset = #menu
-	print(offset)
+	offset = #menu.body + 1
 
 	local opts = {
 		year = 0,
@@ -52,11 +39,10 @@ function M.SetContent()
 	for index, value in ipairs(sessions.list) do
 		opts.sec = value.time
 		local time = os.date("%Hh %Mm %Ss", os.time(opts))
-		table.insert(menu, index .. ". " .. value.name .. "\t|\t\t" .. time)
+		table.insert(menu.body, index .. ". " .. value.name .. "\t|\t\t" .. time)
 	end
 
-	API.nvim_buf_set_lines(buf, -2, -1, false, menu)
-	API.nvim_buf_set_option(buf, "modifiable", false)
+	buf, win = ui.Menu(menu)
 end
 
 function M.Update()
@@ -114,23 +100,6 @@ function M.SetKeymaps(keymaps)
 	end
 
 	API.nvim_buf_set_keymap(buf, "i", "<Enter>", "", opts)
-end
-
-function M.Run()
-	local keymaps = {
-		j = "Move(1)",
-		k = "Move(-1)",
-		o = "Start()",
-		a = "Add()",
-		e = "Edit()",
-		r = "Remove()",
-		q = "Exit()",
-	}
-
-	M.Display()
-	M.SetContent()
-	M.SetKeymaps(keymaps)
-	M.Move(0)
 end
 
 function M.Add()
@@ -224,6 +193,22 @@ function M.setup(opts)
 	M.config = {
 		interval = opts.interval,
 	}
+end
+
+function M.Run()
+	local keymaps = {
+		j = "Move(1)",
+		k = "Move(-1)",
+		o = "Start()",
+		a = "Add()",
+		e = "Edit()",
+		r = "Remove()",
+		q = "Exit()",
+	}
+
+	M.Menu()
+	M.SetKeymaps(keymaps)
+	M.Move(0)
 end
 
 return M
