@@ -175,7 +175,22 @@ function M.Add()
 		callback = function()
 			api.nvim_del_autocmd(id)
 			api.nvim_buf_set_option(buf, "modifiable", false)
-			M.AddSession(string.sub(api.nvim_get_current_line(), 1))
+
+			local isExist = false
+			local name = string.sub(api.nvim_get_current_line(), 1)
+
+			for _, value in ipairs(M.sessions) do
+				if name == value.name then
+					isExist = true
+				end
+			end
+
+			if not isExist then
+				M.AddSession(string.sub(api.nvim_get_current_line(), 1))
+			else
+				print("'" .. name .. "'" .. " already exist")
+			end
+
 			M.SetContent()
 			M.Move(0)
 		end,
