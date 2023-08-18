@@ -3,7 +3,7 @@ local M = {
 }
 
 function M.Save(sessions)
-	vim.cmd("!mkdir -p " .. M.path)
+	vim.cmd("silent !mkdir -p " .. M.path)
 
 	local file = io.open(M.path .. "cache", "w")
 
@@ -35,7 +35,10 @@ function M.Load()
 			break
 		end
 
-		local temp = load("return " .. line)()
+		local temp = ""
+		if #line > 0 then
+			temp = load("return " .. line)()
+		end
 
 		table.insert(result, temp)
 	end
